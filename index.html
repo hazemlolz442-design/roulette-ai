@@ -1,62 +1,128 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>محلل الروليت - WePlay</title>
-<style>
-body {
-  font-family: "Cairo", sans-serif;
-  background: #0b0b1a;
-  color: #fff;
-  text-align: center;
-  margin: 0;
-  padding: 20px;
-}
-h1 { color: #ffcc00; }
-input, button, select {
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  margin: 5px;
-  font-size: 16px;
-}
-button {
-  background: #ffcc00;
-  color: #000;
-  font-weight: bold;
-  cursor: pointer;
-}
-table {
-  margin: 20px auto;
-  border-collapse: collapse;
-  width: 90%;
-}
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #444;
-}
-.highlight {
-  color: #00ff88;
-  font-weight: bold;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ذكاء روليت - تحليل النتائج</title>
+  <style>
+    body {
+      font-family: "Cairo", sans-serif;
+      background-color: #f4f4f9;
+      color: #222;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #0077cc;
+      margin-bottom: 15px;
+    }
+    input {
+      padding: 10px;
+      width: 200px;
+      border-radius: 10px;
+      border: 1px solid #aaa;
+      text-align: center;
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0077cc;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    table {
+      margin: 20px auto;
+      width: 90%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+    }
+    th {
+      background-color: #0077cc;
+      color: white;
+    }
+    .highlight {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <h1>🎯 محلل الروليت الذكي</h1>
+  <p>اكتب النتيجة (مثلاً: برجر، سمك، تفاح)</p>
+  <input id="resultInput" type="text" placeholder="اكتب هنا النتيجة">
+  <br>
+  <button onclick="addResult()">➕ إضافة</button>
+  <button onclick="resetData()">🧹 مسح الكل</button>
 
-<h1>🎯 محلل نتائج لعبة الروليت</h1>
-<p>ادخل الرموز اللي طلعت بالترتيب (مثلاً: برجر، سمك، تفاح...)</p>
+  <table id="statsTable">
+    <thead>
+      <tr>
+        <th>الرمز</th>
+        <th>عدد المرات</th>
+        <th>النسبة</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<input id="resultInput" type="text" placeholder="اكتب النتيجة هنا">
-<button onclick="addResult()">إضافة</button>
-<button onclick="resetData()">مسح الكل</button>
+  <div id="recommendation"></div>
 
-<table id="statsTable">
-  <thead>
-    <tr>
-      <th>الرمز</th>
-      <th>عدد المرات</th>
-      <th>النسبة %</th>
-    </tr>
-  </thead>
-  <tbody
+  <script>
+    let results = [];
+
+    function addResult() {
+      const input = document.getElementById("resultInput");
+      const value = input.value.trim();
+      if (value === "") return;
+
+      results.push(value);
+      input.value = "";
+      updateStats();
+    }
+
+    function resetData() {
+      results = [];
+      updateStats();
+    }
+
+    function updateStats() {
+      const counts = {};
+      results.forEach(r => counts[r] = (counts[r] || 0) + 1);
+
+      const tbody = document.querySelector("#statsTable tbody");
+      tbody.innerHTML = "";
+
+      const total = results.length;
+      let topSymbol = "";
+      let maxCount = 0;
+
+      Object.entries(counts).forEach(([symbol, count]) => {
+        const percent = ((count / total) * 100).toFixed(1);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${symbol}</td><td>${count}</td><td>${percent}%</td>`;
+        tbody.appendChild(tr);
+        if (count > maxCount) {
+          maxCount = count;
+          topSymbol = symbol;
+        }
+      });
+
+      const rec = document.getElementById("recommendation");
+      if (topSymbol)
+        rec.innerHTML = `🔮 التوصية الحالية: <span class="highlight">${topSymbol}</span> (الأكثر تكرارًا)`;
+      else
+        rec.textContent = "";
+    }
+  </script>
+</body>
+</html>
