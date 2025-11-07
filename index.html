@@ -1,167 +1,317 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🎯 الذكاء الصناعي لتوقع الروليت</title>
-  <style>
-    body {
-      font-family: "Cairo", sans-serif;
-      background-color: #f7f9fb;
-      color: #222;
-      text-align: center;
-      padding: 20px;
-    }
-    h1 {
-      color: #0077cc;
-      margin-bottom: 15px;
-    }
-    input {
-      padding: 10px;
-      width: 220px;
-      border-radius: 10px;
-      border: 1px solid #aaa;
-      text-align: center;
-      margin: 10px 0;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 8px;
-      background-color: #0077cc;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 15px;
-    }
-    button:hover {
-      background-color: #005fa3;
-    }
-    table {
-      margin: 20px auto;
-      width: 90%;
-      border-collapse: collapse;
-      font-size: 15px;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 8px;
-    }
-    th {
-      background-color: #0077cc;
-      color: white;
-    }
-    #recommendation {
-      margin-top: 20px;
-      font-size: 18px;
-      background: #eaf4ff;
-      display: inline-block;
-      padding: 15px 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      font-weight: bold;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>محلل ذكي - توقعات الروليت (Markov)</title>
+<style>
+  body { font-family: "Cairo", sans-serif; background:#f6fbff; color:#111; padding:18px; text-align:center; }
+  h1 { color:#0a66c2; margin-bottom:6px; }
+  p.lead { color:#333; margin-top:6px; margin-bottom:14px; }
+  .controls { margin:10px 0 16px; }
+  input[type="text"] { padding:10px; width:220px; border-radius:8px; border:1px solid #ccc; text-align:center; font-size:15px; }
+  button { padding:9px 14px; margin:6px 6px 6px 0; border-radius:8px; border:none; background:#0a66c2; color:#fff; font-weight:700; cursor:pointer; }
+  button.danger { background:#d9534f; }
+  button.secondary { background:#6c757d; }
+  table { width:100%; max-width:720px; margin:14px auto; border-collapse:collapse; font-size:14px; }
+  th, td { padding:8px 6px; border-bottom:1px solid #e0e6ef; text-align:center; }
+  th { background:#eef6ff; color:#0a66c2; }
+  #predictionBox { margin-top:18px; display:inline-block; text-align:right; padding:14px 18px; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(10,102,194,0.06); min-width:320px; }
+  .pred-row { margin:6px 0; font-size:16px; }
+  .bar { height:10px; background:#e6f0ff; border-radius:8px; overflow:hidden; margin-top:6px; }
+  .bar > i { display:block; height:100%; background:#0a66c2; width:0%; }
+  .small { font-size:13px; color:#555; }
+  .note { color:#666; font-size:13px; margin-top:10px; }
+  .status { margin-top:10px; color:#0a66c2; font-weight:700; }
+  .flex { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .btn-undo { background:#ffb74d; color:#000; }
+</style>
 </head>
 <body>
-  <h1>🎯 الذكاء الصناعي لتوقع الروليت</h1>
-  <p>اكتب النتيجة (بطيخ - برتقال - تفاح - خص - سمك - برجر - جمبري - دجاج)</p>
-  <input id="resultInput" type="text" placeholder="اكتب النتيجة هنا">
-  <br />
-  <button onclick="addResult()">➕ إضافة</button>
-  <button onclick="resetData()">🧹 مسح الكل</button>
 
+<h1>🎯 محلل ذكي — توقع النتائج</h1>
+<p class="lead">اكتب نتيجة من القائمة: بطيخ، برتقال، تفاح، خص، سمك، برجر، جمبري، دجاج — ثم اضغط إضافة</p>
+
+<div class="controls">
+  <input id="resultInput" type="text" placeholder="مثال: تفاح" />
+  <button onclick="addResult()">➕ إضافة</button>
+  <button class="btn-undo" onclick="undoLast()">↶ تراجع آخر</button>
+  <button class="secondary" onclick="exportData()">⬇️ تصدير (JSON)</button>
+  <button class="secondary" onclick="importPrompt()">⬆️ استيراد</button>
+  <button class="danger" onclick="resetAll()">🧹 مسح الكل</button>
+</div>
+
+<div style="max-width:760px;margin:0 auto;">
   <table id="statsTable">
     <thead>
-      <tr>
-        <th>الرمز</th>
-        <th>عدد المرات</th>
-        <th>النسبة</th>
-      </tr>
+      <tr><th>الرمز</th><th>مرات الظهور</th><th>النسبة %</th></tr>
     </thead>
     <tbody></tbody>
   </table>
+</div>
 
-  <div id="recommendation"></div>
+<div id="predictionBox">
+  <div style="text-align:center;font-weight:800;font-size:18px">🔮 التوقع الذكي القادم</div>
+  <div id="predictionList" style="margin-top:10px">
+    <div class="note">أضف نتائج (على الأقل 2) ليظهر التوقع.</div>
+  </div>
+  <div class="status" id="statusLine"></div>
+</div>
 
-  <script>
-    let results = [];
-    const symbols = ["بطيخ", "برتقال", "تفاح", "خص", "سمك", "برجر", "جمبري", "دجاج"];
+<div class="note" style="max-width:760px;margin:14px auto;">
+  ملاحظة: النموذج هنا خفيف ويعتمد على تحليل تسلسلي (Markov order 2) مع تراجع للـorder1 ووزن للتكرارات العامة، ويضيف مقدارًا صغيرًا من العشوائية المحسوبة بحيث التوقعات ليست جامدة. ليست ضمانًا للفوز — للأغراض التحليلية فقط.
+</div>
 
-    function addResult() {
-      const input = document.getElementById("resultInput");
-      const value = input.value.trim();
-      if (value === "" || !symbols.includes(value)) {
-        alert("⚠️ من فضلك أدخل اسم صحيح من القائمة المحددة!");
-        return;
-      }
-      results.push(value);
-      input.value = "";
-      updateStats();
-      generateAIprediction();
+<script>
+/* ------------------ إعداد الرموز والبيانات ------------------ */
+const symbols = ["بطيخ","برتقال","تفاح","خس","سمك","برجر","جمبري","دجاج"]; // لاحظ: "خص" في طلب سابق، استخدمت "خس" كمطابقة عربية شائعة
+// تعديل إذا كنت تفضل "خص" بدل "خس":
+// const symbols = ["بطيخ","برتقال","تفاح","خص","سمك","برجر","جمبري","دجاج"];
+
+let results = []; // سلسلة الإدخالات بالترتيب
+// بنية التخزين للتدريب:
+let trans2 = {}; // key = prev2 + '|' + prev1  => { nextSymbol: count, ... }
+let trans1 = {}; // key = prev1 => { nextSymbol: count, ... }
+let globalCounts = {}; // {symbol: count}
+
+// تحمّل بيانات محفوظة (localStorage)
+function loadFromStorage(){
+  try {
+    const raw = localStorage.getItem('roulette_ai_data_v1');
+    if(raw){
+      const obj = JSON.parse(raw);
+      results = obj.results || [];
+      trans2 = obj.trans2 || {};
+      trans1 = obj.trans1 || {};
+      globalCounts = obj.globalCounts || {};
+    } else {
+      // init counts
+      symbols.forEach(s=> globalCounts[s]=0);
     }
+  } catch(e){
+    console.error(e);
+    symbols.forEach(s=> globalCounts[s]=0);
+  }
+}
+function saveToStorage(){
+  const obj = { results, trans2, trans1, globalCounts };
+  localStorage.setItem('roulette_ai_data_v1', JSON.stringify(obj));
+}
 
-    function resetData() {
-      results = [];
-      document.querySelector("#statsTable tbody").innerHTML = "";
-      document.getElementById("recommendation").innerHTML = "";
+/* ------------------ وظائف التدريب والتنبؤ ------------------ */
+function train_add(prev, next){
+  // update trans1
+  if(!trans1[prev]) trans1[prev] = {};
+  trans1[prev][next] = (trans1[prev][next]||0) + 1;
+}
+function train_add2(prev2, prev1, next){
+  const key = prev2 + '|' + prev1;
+  if(!trans2[key]) trans2[key] = {};
+  trans2[key][next] = (trans2[key][next]||0) + 1;
+}
+function rebuildFromResults(){
+  trans2 = {};
+  trans1 = {};
+  globalCounts = {};
+  symbols.forEach(s=> globalCounts[s]=0);
+  for(let i=0;i<results.length;i++){
+    const cur = results[i];
+    globalCounts[cur] = (globalCounts[cur]||0) + 1;
+    if(i>=1){
+      const prev1 = results[i-1];
+      train_add(prev1, cur);
     }
-
-    function updateStats() {
-      const counts = {};
-      results.forEach(r => counts[r] = (counts[r] || 0) + 1);
-      const tbody = document.querySelector("#statsTable tbody");
-      tbody.innerHTML = "";
-      const total = results.length;
-      Object.entries(counts).forEach(([symbol, count]) => {
-        const percent = ((count / total) * 100).toFixed(1);
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${symbol}</td><td>${count}</td><td>${percent}%</td>`;
-        tbody.appendChild(tr);
-      });
+    if(i>=2){
+      const prev2 = results[i-2];
+      const prev1 = results[i-1];
+      train_add2(prev2, prev1, cur);
     }
+  }
+  saveToStorage();
+}
 
-    // التوقع الذكي (عشوائية محسوبة + تحليل التكرار)
-    function generateAIprediction() {
-      if (results.length < 2) {
-        document.getElementById("recommendation").innerHTML = "🔮 أدخل على الأقل نتيجتين لبدء التحليل";
-        return;
-      }
+/* ------------------ الواجهة والتحديث ------------------ */
+function renderStats(){
+  const tbody = document.querySelector("#statsTable tbody");
+  tbody.innerHTML = "";
+  const total = results.length || 0;
+  // ensure all symbols shown
+  symbols.forEach(sym=>{
+    const count = globalCounts[sym] || 0;
+    const pct = total>0 ? ((count/total)*100).toFixed(1) : "0.0";
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${sym}</td><td>${count}</td><td>${pct}%</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('statusLine').textContent = `سجَّل: ${total} لفة محفوظة`;
+}
 
-      const last = results[results.length - 1];
-      const patternWeights = {};
-      symbols.forEach(sym => (patternWeights[sym] = 1));
+/* ---------- دالة التوقع الذكي (Markov order2 + backoff + randomness) ---------- */
+function predictTop3(){
+  const outDiv = document.getElementById('predictionList');
+  outDiv.innerHTML = "";
+  if(results.length < 2){
+    outDiv.innerHTML = `<div class="note">أدخل على الأقل نتيجتين للبدء</div>`;
+    return;
+  }
+  // نستخدم: وزن2 للـorder2، وزن1 للـorder1، وزنG للتوزيع العام
+  const weight2 = 0.60;
+  const weight1 = 0.30;
+  const weightG = 0.10;
+  // last two
+  const last1 = results[results.length-1];
+  const last2 = results[results.length-2];
 
-      // تحليل النمط: زيادة احتمال ما يلي آخر نتيجة
-      for (let i = 0; i < results.length - 1; i++) {
-        if (results[i] === last) {
-          const next = results[i + 1];
-          patternWeights[next] = (patternWeights[next] || 0) + 3; // تعزيز الذكاء الصناعي
-        }
-      }
+  // حساب الأوزان المؤقتة لكل رمز
+  const scores = {};
+  symbols.forEach(s => scores[s] = 0.001); // قاعدة صغيرة للـsmoothing
 
-      // إضافة عامل عشوائي صغير
-      symbols.forEach(sym => {
-        patternWeights[sym] += Math.random() * 2;
-      });
+  // order2 contributions
+  const key2 = last2 + '|' + last1;
+  if(trans2[key2]){
+    const map = trans2[key2];
+    const sum = Object.values(map).reduce((a,b)=>a+b,0);
+    Object.entries(map).forEach(([sym,c])=>{
+      scores[sym] += weight2 * (c / sum);
+    });
+  } else {
+    // لو مفيش بيانات order2 نهمشها (weights توزع للاحتمالات الأخرى)
+  }
 
-      // ترتيب التوقعات
-      const sorted = Object.entries(patternWeights)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
+  // order1 contributions
+  if(trans1[last1]){
+    const map1 = trans1[last1];
+    const sum1 = Object.values(map1).reduce((a,b)=>a+b,0);
+    Object.entries(map1).forEach(([sym,c])=>{
+      scores[sym] += weight1 * (c / sum1);
+    });
+  }
 
-      const totalWeight = sorted.reduce((a, [_, w]) => a + w, 0);
+  // global frequency contribution
+  const totGlobal = Object.values(globalCounts).reduce((a,b)=>a+b,0) || 1;
+  Object.entries(globalCounts).forEach(([sym,c])=>{
+    scores[sym] += weightG * (c / totGlobal);
+  });
 
-      let html = "🔮 <b>التوقع الذكي القادم:</b><br><br>";
-      sorted.forEach(([sym, w], i) => {
-        const percent = ((w / totalWeight) * 100).toFixed(1);
-        html += `${i + 1}️⃣ ${sym} — ${percent}%<br>`;
-      });
+  // إضافة عامل عشوائي محسوب (صغير) لإدخال تنوع
+  const randomnessStrength = 0.08; // ضبط مقدار العشوائية
+  symbols.forEach(sym=>{
+    scores[sym] += Math.random() * randomnessStrength;
+  });
 
-      document.getElementById("recommendation").innerHTML = html;
-    }
-  </script>
+  // تحويل إلى ترتيب
+  const arr = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const top3 = arr.slice(0,3);
+  // احسب مجموع أوزان top3 للتطبيع للعرض
+  const totalTop = top3.reduce((s,[k,v])=>s+v,0) || 1;
+
+  // إظهار النتائج مع بار ونسبة مئوية محسوبة من مجمل top3
+  top3.forEach(([sym, val], idx)=>{
+    const pct = ((val/totalTop)*100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'pred-row';
+    row.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+        <div style="text-align:right;"><strong>${idx+1}️⃣ ${sym}</strong></div>
+        <div style="min-width:90px;text-align:left;font-weight:800">${pct}%</div>
+      </div>
+      <div class="bar"><i style="width:${pct}%;"></i></div>
+    `;
+    outDiv.appendChild(row);
+  });
+}
+
+/* ------------------ واجهة المستخدم: إضافة/تراجع/مسح ------------------ */
+function addResult(){
+  const input = document.getElementById('resultInput');
+  const v = input.value.trim();
+  if(!v){
+    alert('اكتب اسم من القائمة أولاً');
+    return;
+  }
+  if(!symbols.includes(v)){
+    alert('الرمز غير معروف. استخدم أحد الرموز التالية:\n' + symbols.join(' ، '));
+    return;
+  }
+  // أضف وقم بالتدريب الجزئي
+  if(results.length >= 1){
+    train_add(results[results.length-1], v);
+  }
+  if(results.length >= 2){
+    train_add2(results[results.length-2], results[results.length-1], v);
+  }
+  results.push(v);
+  globalCounts[v] = (globalCounts[v]||0) + 1;
+  saveToStorage();
+  input.value = '';
+  renderStats();
+  predictTop3();
+}
+
+function undoLast(){
+  if(results.length === 0) return;
+  results.pop();
+  // إعادة بناء النموذج من الصفر لضمان اتساق العدّات
+  rebuildFromResults();
+  renderStats();
+  predictTop3();
+}
+
+function resetAll(){
+  if(!confirm('هل متأكد أنك عايز تمسح كل البيانات؟')) return;
+  results = [];
+  trans2 = {};
+  trans1 = {};
+  globalCounts = {};
+  symbols.forEach(s=> globalCounts[s]=0);
+  saveToStorage();
+  renderStats();
+  predictTop3();
+}
+
+/* ---------- استيراد وتصدير بيانات (JSON) ---------- */
+function exportData(){
+  const data = { results, trans2, trans1, globalCounts };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'roulette_ai_data.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importPrompt(){
+  const text = prompt('ألصق هنا محتوى JSON للتعويض/الاستيراد (سيحل محل البيانات الحالية):');
+  if(!text) return;
+  try {
+    const obj = JSON.parse(text);
+    results = obj.results || [];
+    trans2 = obj.trans2 || {};
+    trans1 = obj.trans1 || {};
+    globalCounts = obj.globalCounts || {};
+    saveToStorage();
+    renderStats();
+    predictTop3();
+    alert('تم الاستيراد بنجاح');
+  } catch(e){
+    alert('فشل الاستيراد: JSON غير صحيح');
+  }
+}
+
+/* ------------------ بداية التشغيل ------------------ */
+loadFromStorage();
+renderStats();
+predictTop3();
+
+// تفعيل الزر Enter لإضافة بسرعة
+document.getElementById('resultInput').addEventListener('keyup', function(e){
+  if(e.key === 'Enter') addResult();
+});
+</script>
+
 </body>
 </html>
+```0
