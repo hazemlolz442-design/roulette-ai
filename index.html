@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎯 محلل الروليت الذكي - أفضل 3 توقعات</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎯 الذكاء الصناعي لتوقع الروليت</title>
   <style>
     body {
       font-family: "Cairo", sans-serif;
@@ -53,26 +53,23 @@
       background-color: #0077cc;
       color: white;
     }
-    .highlight {
-      color: red;
-      font-weight: bold;
-    }
     #recommendation {
-      margin-top: 15px;
-      font-size: 17px;
+      margin-top: 20px;
+      font-size: 18px;
       background: #eaf4ff;
       display: inline-block;
-      padding: 10px 20px;
+      padding: 15px 25px;
       border-radius: 10px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>🎯 محلل الروليت الذكي</h1>
-  <p>اكتب النتيجة (مثلاً: برجر، سمك، تفاح)</p>
-  <input id="resultInput" type="text" placeholder="اكتب هنا النتيجة">
-  <br>
+  <h1>🎯 الذكاء الصناعي لتوقع الروليت</h1>
+  <p>اكتب النتيجة (بطيخ - برتقال - تفاح - خص - سمك - برجر - جمبري - دجاج)</p>
+  <input id="resultInput" type="text" placeholder="اكتب النتيجة هنا">
+  <br />
   <button onclick="addResult()">➕ إضافة</button>
   <button onclick="resetData()">🧹 مسح الكل</button>
 
@@ -91,28 +88,32 @@
 
   <script>
     let results = [];
+    const symbols = ["بطيخ", "برتقال", "تفاح", "خص", "سمك", "برجر", "جمبري", "دجاج"];
 
     function addResult() {
       const input = document.getElementById("resultInput");
       const value = input.value.trim();
-      if (value === "") return;
+      if (value === "" || !symbols.includes(value)) {
+        alert("⚠️ من فضلك أدخل اسم صحيح من القائمة المحددة!");
+        return;
+      }
       results.push(value);
       input.value = "";
       updateStats();
+      generateAIprediction();
     }
 
     function resetData() {
       results = [];
-      updateStats();
+      document.querySelector("#statsTable tbody").innerHTML = "";
+      document.getElementById("recommendation").innerHTML = "";
     }
 
     function updateStats() {
       const counts = {};
       results.forEach(r => counts[r] = (counts[r] || 0) + 1);
-
       const tbody = document.querySelector("#statsTable tbody");
       tbody.innerHTML = "";
-
       const total = results.length;
       Object.entries(counts).forEach(([symbol, count]) => {
         const percent = ((count / total) * 100).toFixed(1);
@@ -120,27 +121,46 @@
         tr.innerHTML = `<td>${symbol}</td><td>${count}</td><td>${percent}%</td>`;
         tbody.appendChild(tr);
       });
-
-      showTop3(counts);
     }
 
-    function showTop3(counts) {
-      const sorted = Object.entries(counts)
+    // التوقع الذكي (عشوائية محسوبة + تحليل التكرار)
+    function generateAIprediction() {
+      if (results.length < 2) {
+        document.getElementById("recommendation").innerHTML = "🔮 أدخل على الأقل نتيجتين لبدء التحليل";
+        return;
+      }
+
+      const last = results[results.length - 1];
+      const patternWeights = {};
+      symbols.forEach(sym => (patternWeights[sym] = 1));
+
+      // تحليل النمط: زيادة احتمال ما يلي آخر نتيجة
+      for (let i = 0; i < results.length - 1; i++) {
+        if (results[i] === last) {
+          const next = results[i + 1];
+          patternWeights[next] = (patternWeights[next] || 0) + 3; // تعزيز الذكاء الصناعي
+        }
+      }
+
+      // إضافة عامل عشوائي صغير
+      symbols.forEach(sym => {
+        patternWeights[sym] += Math.random() * 2;
+      });
+
+      // ترتيب التوقعات
+      const sorted = Object.entries(patternWeights)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3);
 
-      const total = results.length;
-      const rec = document.getElementById("recommendation");
-      if (sorted.length > 0) {
-        let html = "🔮 <b>أفضل 3 توقعات محتملة:</b><br><br>";
-        sorted.forEach(([symbol, count], i) => {
-          const percent = ((count / total) * 100).toFixed(1);
-          html += `${i + 1}️⃣ ${symbol} — <span class='highlight'>${percent}%</span><br>`;
-        });
-        rec.innerHTML = html;
-      } else {
-        rec.textContent = "";
-      }
+      const totalWeight = sorted.reduce((a, [_, w]) => a + w, 0);
+
+      let html = "🔮 <b>التوقع الذكي القادم:</b><br><br>";
+      sorted.forEach(([sym, w], i) => {
+        const percent = ((w / totalWeight) * 100).toFixed(1);
+        html += `${i + 1}️⃣ ${sym} — ${percent}%<br>`;
+      });
+
+      document.getElementById("recommendation").innerHTML = html;
     }
   </script>
 </body>
