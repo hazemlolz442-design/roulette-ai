@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ذكاء روليت - تحليل النتائج</title>
+  <title>🎯 محلل الروليت الذكي - أفضل 3 توقعات</title>
   <style>
     body {
       font-family: "Cairo", sans-serif;
-      background-color: #f4f4f9;
+      background-color: #f7f9fb;
       color: #222;
       text-align: center;
       padding: 20px;
@@ -18,11 +18,12 @@
     }
     input {
       padding: 10px;
-      width: 200px;
+      width: 220px;
       border-radius: 10px;
       border: 1px solid #aaa;
       text-align: center;
       margin: 10px 0;
+      font-size: 16px;
     }
     button {
       padding: 10px 20px;
@@ -33,6 +34,7 @@
       color: white;
       cursor: pointer;
       font-weight: bold;
+      font-size: 15px;
     }
     button:hover {
       background-color: #005fa3;
@@ -41,6 +43,7 @@
       margin: 20px auto;
       width: 90%;
       border-collapse: collapse;
+      font-size: 15px;
     }
     th, td {
       border: 1px solid #aaa;
@@ -53,6 +56,15 @@
     .highlight {
       color: red;
       font-weight: bold;
+    }
+    #recommendation {
+      margin-top: 15px;
+      font-size: 17px;
+      background: #eaf4ff;
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -84,7 +96,6 @@
       const input = document.getElementById("resultInput");
       const value = input.value.trim();
       if (value === "") return;
-
       results.push(value);
       input.value = "";
       updateStats();
@@ -103,25 +114,33 @@
       tbody.innerHTML = "";
 
       const total = results.length;
-      let topSymbol = "";
-      let maxCount = 0;
-
       Object.entries(counts).forEach(([symbol, count]) => {
         const percent = ((count / total) * 100).toFixed(1);
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${symbol}</td><td>${count}</td><td>${percent}%</td>`;
         tbody.appendChild(tr);
-        if (count > maxCount) {
-          maxCount = count;
-          topSymbol = symbol;
-        }
       });
 
+      showTop3(counts);
+    }
+
+    function showTop3(counts) {
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const total = results.length;
       const rec = document.getElementById("recommendation");
-      if (topSymbol)
-        rec.innerHTML = `🔮 التوصية الحالية: <span class="highlight">${topSymbol}</span> (الأكثر تكرارًا)`;
-      else
+      if (sorted.length > 0) {
+        let html = "🔮 <b>أفضل 3 توقعات محتملة:</b><br><br>";
+        sorted.forEach(([symbol, count], i) => {
+          const percent = ((count / total) * 100).toFixed(1);
+          html += `${i + 1}️⃣ ${symbol} — <span class='highlight'>${percent}%</span><br>`;
+        });
+        rec.innerHTML = html;
+      } else {
         rec.textContent = "";
+      }
     }
   </script>
 </body>
